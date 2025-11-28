@@ -1,0 +1,91 @@
+html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clicker Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 { margin-bottom: 10px; }
+    #coin-display {
+      font-size: 24px;
+      margin: 10px 0;
+    }
+    #click-btn {
+      padding: 20px 40px;
+      font-size: 24px;
+      border: none;
+      border-radius: 12px;
+      background: gold;
+      cursor: pointer;
+    }
+    #shop {
+      margin-top: 30px;
+      width: 300px;
+      background: #333;
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .upgrade {
+      background: #444;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .upgrade:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Coin Clicker</h1>
+  <div id="coin-display">Coins: 0</div>
+
+  <button id="click-btn">Click!</button>
+
+  <div id="shop">
+    <h2>Shop</h2>
+    <div class="upgrade" data-cost="20" data-add="1">Upgrade +1 (Cost: 20)</div>
+    <div class="upgrade" data-cost="100" data-add="5">Upgrade +5 (Cost: 100)</div>
+    <div class="upgrade" data-cost="500" data-add="20">Upgrade +20 (Cost: 500)</div>
+  </div>
+
+  <script>
+    let coins = 0;
+    let perClick = 1;
+
+    const coinDisplay = document.getElementById('coin-display');
+    const clickBtn = document.getElementById('click-btn');
+    const upgrades = document.querySelectorAll('.upgrade');
+
+    function updateDisplay() {
+      coinDisplay.textContent = `Coins: ${coins}`;
+    }
+
+    clickBtn.addEventListener('click', () => {
+      coins += perClick;
+      updateDisplay();
+    });
+
+    upgrades.forEach(upg => {
+      upg.addEventListener('click', () => {
+        const cost = Number(upg.getAttribute('data-cost'));
+        const add = Number(upg.getAttribute('data-add'));
+
+        if (coins >= cost) {
+          coins -= cost;
+          perClick += add;
+          updateDisplay();
+        }
+      });
+    });
+  </script>
+</body>
