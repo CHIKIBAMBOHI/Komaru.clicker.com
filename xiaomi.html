@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Komaru Combat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #8A2BE2, #4B0082, #2d2d7a);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .game-title {
+            font-size: 4em;
+            background: linear-gradient(45deg, #FF6B6B, #FFD93D, #9B4DFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+            margin-bottom: 10px;
+            animation: glow 2s ease-in-out infinite alternate;
+            font-weight: bold;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
+            to { text-shadow: 0 0 30px rgba(255, 107, 107, 0.8), 0 0 40px rgba(255, 107, 107, 0.6); }
+        }
+
+        .main-game {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .clicker-section {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 40px rgba(155, 77, 255, 0.3);
+        }
+
+        .banana-display {
+            font-size: 5em;
+            margin: 20px 0;
+            text-shadow: 0 0 20px #FFD93D;
+            background: linear-gradient(45deg, #FFD93D, #FF6B6B);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .click-button {
+            background: linear-gradient(45deg, #FF6B6B, #FFD93D);
+            border: none;
+            padding: 30px 70px;
+            font-size: 2em;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 40px rgba(255, 107, 107, 0.5);
+            color: #5a2ea6;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .click-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 60px rgba(255, 107, 107, 0.8);
+        }
+
+        .click-button:active {
+            transform: scale(0.95);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #FFD93D;
+            margin: 5px 0;
+        }
+
+        .upgrades-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 40px rgba(155, 77, 255, 0.3);
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #FFD93D;
+            text-shadow: 0 0 10px rgba(255, 217, 61, 0.5);
+        }
+
+        .upgrade-category {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #FF6B6B;
+            border-bottom: 2px solid rgba(255, 107, 107, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .upgrade-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .upgrade-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .upgrade-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .upgrade-cost {
+            color: #FFD93D;
+            font-weight: bold;
+        }
+
+        .upgrade-description {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .upgrade-button {
+            background: linear-gradient(45deg, #9B4DFF, #6B46C1);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upgrade-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+
+        .upgrade-button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .floating-banana {
+            position: absolute;
+            font-size: 20px;
+            pointer-events: none;
+            animation: floatBanana 1s ease-out forwards;
+            z-index: 1000;
+            font-weight: bold;
+        }
+
+        @keyframes floatBanana {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-80px) scale(1.3);
+            }
+        }
+
+        .komaru-bonus {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            height: 120px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+            border: 3px solid #FFD93D;
+            z-index: 100;
+        }
+
+        .komaru-bonus:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+        }
+
+        .bonus-notification {
+            position: fixed;
+            top: 150px;
+            right: 20px;
+            background: linear-gradient(45deg, #FF6B6B, #FFD93D);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.5s ease;
+            z-index: 1000;
+            font-weight: bold;
+        }
+
+        .bonus-notification.show {
+            transform: translateX(0);
+        }
+
+        @media (max-width: 768px) {
+            .main-game {
+                grid-template-columns: 1fr;
+            }
+            
+            .game-title {
+                font-size: 2.5em;
+            }
+            
+            .banana-display {
+                font-size: 3em;
+            }
+            
+            .click-button {
+                padding: 20px 50px;
+                font-size: 1.5em;
+            }
+            
+            .komaru-bonus {
+                width: 80px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Komaru Bonus Image -->
+    <img src="https://yt3.googleusercontent.com/kFJskvy1eX9XfvrmMzmBma7vuCuQSsDqFj73WAeLBO6zKUenx9HF5C9nBDwcRFMqp-bcQAT4e5o=s900-c-k-c0x00ffffff-no-rj" 
+         alt="Komaru" class="komaru-bonus" id="komaru-img" title="Кликни для бананов!">
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="game-title">Komaru Combat</h1>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="main-game">
+            <!-- Clicker Section -->
+            <div class="clicker-section">
+                <div class="banana-display" id="banana-display">🍌 0</div>
+                <button class="click-button" id="click-btn">CLICK FOR BANANAS!</button>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div>Total Clicks</div>
+                        <div class="stat-value" id="total-clicks">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Bananas/Click</div>
+                        <div class="stat-value" id="bananas-per-click">1</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Auto Bananas/s</div>
+                        <div class="stat-value" id="auto-bananas">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Play Time</div>
+                        <div class="stat-value" id="play-time">0s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upgrades Section -->
+            <div class="upgrades-section">
+                <h2 class="section-title">🛠️ UPGRADES</h2>
+                
+                <!-- Click Upgrades -->
+                <div class="upgrade-category">
+                    <h3 class="category-title">🍌 CLICK POWER</h3>
+                    <div class="upgrade-item" data-cost="25" data-type="click" data-power="1">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">Banana Boost I</div>
+                            <div class="upgrade-cost">🍌 25</div>
+                        </div>
+                        <div class="upgrade-description">+1 banana per click</div>
+                        <button class="upgrade-button">Purchase</button>
+                    </div>
+                    
+                    <div class="upgrade-item" data-cost="100" data-type="click" data-power="5">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">Banana Boost II</div>
+                            <div class="upgrade-cost">🍌 100</div>
+                        </div>
+                        <div class="upgrade-description">+5 bananas per click</div>
+                        <button class="upgrade-button">Purchase</button>
+                    </div>
+                    
+                    <div class="upgrade-item" data-cost="500" data-type="click" data-power="10">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">Banana Blast</div>
+                            <div class="upgrade-cost">🍌 500</div>
+                        </div>
+                        <div class="upgrade-description">+10 bananas per click</div>
+                        <button class="upgrade-button">Purchase</button>
+                    </div>
+                </div>
+
+                <!-- Auto Upgrades -->
+                <div class="upgrade-category">
+                    <h3 class="category-title">🤖 AUTO COLLECTORS</h3>
+                    <div class="upgrade-item" data-cost="50" data-type="auto" data-power="1" data-interval="1000">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">Monkey Helper</div>
+                            <div class="upgrade-cost">🍌 50</div>
+                        </div>
+                        <div class="upgrade-description">1 banana per second</div>
+                        <button class="upgrade-button">Purchase</button>
+                    </div>
+                    
+                    <div class="upgrade-item" data-cost="300" data-type="auto" data-power="5" data-interval="1000">
+                        <div class="upgrade-header">
+                            <div class="upgrade-name">Banana Farm</div>
+                            <div class="upgrade-cost">🍌 300</div>
+                        </div>
+                        <div class="upgrade-description">5 bananas per second</div>
+                        <button class="upgrade-button">Purchase</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            bananas: 0,
+            totalClicks: 0,
+            bananasPerClick: 1,
+            playTime: 0,
+            autoCollectors: [],
+            lastAutoBonus: 0
+        };
+
+        // DOM Elements
+        const elements = {
+            bananaDisplay: document.getElementById('banana-display'),
+            totalClicks: document.getElementById('total-clicks'),
+            bananasPerClick: document.getElementById('bananas-per-click'),
+            autoBananas: document.getElementById('auto-bananas'),
+            playTime: document.getElementById('play-time'),
+            clickBtn: document.getElementById('click-btn'),
+            komaruImg: document.getElementById('komaru-img'),
+            upgrades: document.querySelectorAll('.upgrade-item')
+        };
+
+        // Initialize Game
+        function initGame() {
+            loadGame();
+            setupEventListeners();
+            startGameLoop();
+            updateDisplay();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Click button
+            elements.clickBtn.addEventListener('click', function(e) {
+                handleClick(e);
+            });
+            
+            // Komaru image click
+            elements.komaruImg.addEventListener('click', function() {
+                giveManualBonus(10);
+            });
+
+            // Upgrade buttons
+            elements.upgrades.forEach(upgrade => {
+                const button = upgrade.querySelector('.upgrade-button');
+                button.addEventListener('click', function() {
+                    purchaseUpgrade(upgrade);
+                });
+            });
+        }
+
+        // Game Functions
+        function handleClick(event) {
+            console.log('Click detected!'); // Debug log
+            const bananasEarned = gameState.bananasPerClick;
+            gameState.bananas += bananasEarned;
+            gameState.totalClicks++;
+            
+            // Create floating banana
+            createFloatingBanana(bananasEarned, event.clientX, event.clientY);
+            
+            updateDisplay();
+            saveGame();
+        }
+
+        function giveManualBonus(amount) {
+            gameState.bananas += amount;
+            createFloatingBanana(amount, 
+                Math.random() * window.innerWidth, 
+                Math.random() * window.innerHeight
+            );
+            updateDisplay();
+            saveGame();
+        }
+
+        function giveAutoBonus() {
+            const now = Date.now();
+            // Check if 4-5 minutes have passed
+            if (now - gameState.lastAutoBonus >= getRandomTime()) {
+                const bonusAmount = Math.floor(Math.random() * 91) + 10; // 10-100 bananas
+                gameState.bananas += bonusAmount;
+                gameState.lastAutoBonus = now;
+                
+                showBonusNotification(bonusAmount);
+                createFloatingBanana(bonusAmount, 
+                    Math.random() * window.innerWidth, 
+                    Math.random() * window.innerHeight
+                );
+                updateDisplay();
+                saveGame();
+            }
+        }
+
+        function getRandomTime() {
+            // 4-5 minutes in milliseconds
+            return Math.floor(Math.random() * 60000) + 240000;
+        }
+
+        function showBonusNotification(amount) {
+            const notification = document.createElement('div');
+            notification.className = 'bonus-notification';
+            notification.innerHTML = `🎁 Комару дарит ${amount} бананов!`;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+
+        function createFloatingBanana(amount, x, y) {
+            const banana = document.createElement('div');
+            banana.className = 'floating-banana';
+            banana.textContent = `+${amount} 🍌`;
+            banana.style.left = x + 'px';
+            banana.style.top = y + 'px';
+            banana.style.color = '#FFD93D';
+            document.body.appendChild(banana);
+
+            setTimeout(() => banana.remove(), 1000);
+        }
+
+        function purchaseUpgrade(upgrade) {
+            const cost = parseInt(upgrade.getAttribute('data-cost'));
+            const type = upgrade.getAttribute('data-type');
+            
+            if (gameState.bananas >= cost) {
+                gameState.bananas -= cost;
+                
+                if (type === 'click') {
+                    const clickPower = parseInt(upgrade.getAttribute('data-power'));
+                    gameState.bananasPerClick += clickPower;
+                } else if (type === 'auto') {
+                    const autoPower = parseInt(upgrade.getAttribute('data-power'));
+                    const interval = parseInt(upgrade.getAttribute('data-interval'));
+                    addAutoCollector(autoPower, interval);
+                }
+                
+                updateDisplay();
+                saveGame();
+            }
+        }
+
+        function addAutoCollector(power, interval) {
+            gameState.autoCollectors.push({
+                power: power,
+                interval: interval,
+                lastTick: Date.now()
+            });
+        }
+
+        function updateAutoCollectors() {
+            const now = Date.now();
+            let totalAutoBananas = 0;
+            
+            gameState.autoCollectors.forEach(collector => {
+                if (now - collector.lastTick >= collector.interval) {
+                    const bananasEarned = collector.power;
+                    gameState.bananas += bananasEarned;
+                    totalAutoBananas += bananasEarned;
+                    collector.lastTick = now;
+                }
+            });
+            
+            return totalAutoBananas;
+        }
+
+        function updateDisplay() {
+            elements.bananaDisplay.textContent = `🍌 ${Math.floor(gameState.bananas)}`;
+            elements.totalClicks.textContent = gameState.totalClicks;
+            elements.bananasPerClick.textContent = gameState.bananasPerClick;
+            elements.playTime.textContent = `${gameState.playTime}s`;
+            
+            // Calculate auto bananas per second
+            const autoBananasPerSecond = gameState.autoCollectors.reduce((total, collector) => {
+                return total + (collector.power * (1000 / collector.interval));
+            }, 0);
+            elements.autoBananas.textContent = autoBananasPerSecond.toFixed(1);
+            
+            // Update upgrades availability
+            elements.upgrades.forEach(upgrade => {
+                const cost = parseInt(upgrade.getAttribute('data-cost'));
+                const button = upgrade.querySelector('.upgrade-button');
+                const isDisabled = gameState.bananas < cost;
+                
+                upgrade.classList.toggle('disabled', isDisabled);
+                button.disabled = isDisabled;
+            });
+        }
+
+        // Save/Load Game
+        function saveGame() {
+            localStorage.setItem('komaruCombatSave', JSON.stringify(gameState));
+        }
+function loadGame() {
+const saved = localStorage.get Item('komaruCombatSave');
+if (saved) {
+try {
+const data = JSON. parse(saved);
+gameState = data;
+} catch (e) {
+console.error('Error loading save:', e);
+}
+}
+// Game Loop
+function startGameLoop() {
+setInterval(() => {
+gameState.playTime++;
+updateAutoCollectors();
+giveAutoBonus();
+updateDisplay();
+saveGame();
+}, 1000);
+}
+initGame();
+</script>
+</body>
+</html>
