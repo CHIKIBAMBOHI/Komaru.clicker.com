@@ -1,0 +1,722 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clicker Komaru</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #5a2ea6, #8a2be2);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+      overflow-x: hidden;
+      min-height: 100vh;
+      margin: 0;
+      padding-bottom: 80px;
+    }
+
+    /* Secret button styles */
+    #secret-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s;
+      width: 100px;
+      height: 100px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+      z-index: 100;
+    }
+    #secret-btn:hover { 
+      transform: scale(1.1); 
+      box-shadow: 0 0 30px rgba(255, 193, 7, 0.8);
+    }
+    #secret-btn:active { 
+      transform: scale(0.95); 
+    }
+    #secret-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    /* Auto bonus notification */
+    .auto-bonus-notification {
+      position: fixed;
+      top: 130px;
+      right: 20px;
+      background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transform: translateX(400px);
+      transition: transform 0.5s ease;
+      z-index: 1000;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .auto-bonus-notification.show {
+      transform: translateX(0);
+    }
+
+    /* New image in top right corner */
+    #top-right-image {
+      position: absolute;
+      top: 20px;
+      right: 140px;
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+      border: 2px solid gold;
+      object-fit: cover;
+      transition: transform 0.3s;
+      z-index: 99;
+    }
+
+    #top-right-image:hover {
+      transform: scale(1.05) rotate(5deg);
+    }
+
+    /* Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-around;
+      padding: 15px 0;
+      z-index: 100;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 14px;
+      padding: 10px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .nav-btn.active {
+      background: rgba(155, 77, 255, 0.3);
+      transform: translateY(-5px);
+    }
+
+    .nav-btn:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .nav-icon {
+      font-size: 20px;
+    }
+
+    /* Sections */
+    .section {
+      display: none;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    /* Home Section */
+    #home-section {
+      display: block;
+    }
+
+    h1 { 
+      font-size: 42px; 
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(255,255,255,0.3);
+    }
+    #coin-display {
+      font-size: 28px;
+      margin: 10px 0 20px 0;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #stats {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(255,255,255,0.1);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    #click-btn {
+      padding: 25px 50px;
+      font-size: 28px;
+      border: none;
+      border-radius: 20px;
+      background: linear-gradient(45deg, #9b4dff, #ff6b6b);
+      box-shadow: 0 0 30px rgba(155,77,255,0.7);
+      cursor: pointer;
+      transition: all 0.2s;
+      color: white;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    #click-btn:hover { transform: scale(1.05); }
+    #click-btn:active { transform: scale(0.95); }
+
+    /* Shop Section */
+    #shop-section {
+      margin-top: 20px;
+    }
+
+    .shop-category {
+      margin-bottom: 30px;
+    }
+
+    .shop-category h3 {
+      margin-bottom: 15px;
+      color: #ffd93d;
+      font-size: 20px;
+    }
+
+    .upgrade {
+      background: rgba(255,255,255,0.12);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+    }
+    .upgrade:hover { 
+      background: rgba(255,255,255,0.18);
+      transform: translateX(5px);
+    }
+    .upgrade.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .upgrade-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .upgrade-name {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .upgrade-description {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .upgrade-cost {
+      font-weight: bold;
+      color: #ffd93d;
+    }
+
+    /* Stats Section */
+    #stats-section {
+      text-align: left;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffd93d;
+      margin: 10px 0;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Achievements Section */
+    #achievements-section {
+      text-align: left;
+    }
+
+    .achievement {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .achievement.locked {
+      opacity: 0.5;
+    }
+
+    .achievement-icon {
+      font-size: 24px;
+    }
+
+    .achievement-info {
+      flex: 1;
+    }
+
+    .achievement-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .achievement-description {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    /* Floating coin animation */
+    .float-coin {
+      position: absolute;
+      font-size: 24px;
+      color: gold;
+      pointer-events: none;
+      animation: floatUp 0.9s ease-out forwards;
+      text-shadow: 0 0 10px rgba(255,215,0,0.8);
+      font-weight: bold;
+      z-index: 1000;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+    }
+
+    /* Auto-clicker progress bar */
+    .auto-progress {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin-top: 5px;
+      overflow: hidden;
+    }
+    .auto-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #00ff88, #00ccff);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    /* Achievement popup */
+    .achievement-popup {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(45deg, #ff6b6b, #ffd93d);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transform: translateX(400px);
+      transition: transform 0.5s ease;
+      z-index: 1000;
+    }
+    .achievement-popup.show {
+      transform: translateX(0);
+    }
+
+    /* Promo code button */
+    #promo-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    #promo-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Promo code modal */
+    .promo-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .promo-modal.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .promo-content {
+      background: linear-gradient(135deg, #6b46c1, #9f7aea);
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      max-width: 300px;
+      width: 90%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .promo-content h3 {
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+    #promo-input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 15px;
+      background: rgba(255,255,255,0.9);
+    }
+    #promo-submit {
+      background: #ff6b6b;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    #promo-submit:hover {
+      background: #ff5252;
+      transform: scale(1.05);
+    }
+    .promo-message {
+      margin-top: 10px;
+      font-size: 14px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- New image in top right corner -->
+  <img src="https://i.imgur.com/6Q9W0Qj.png" alt="Special Image" id="top-right-image" title="Крутая картинка!">
+
+  <!-- Secret button with Komaru cat -->
+  <button id="secret-btn" title="Нажми для 100 монет! 🍌">
+    <img src="https://yt3.googleusercontent.com/kFJskvy1eX9XfvrmMzmBma7vuCuQSsDqFj73WAeLBO6zKUenx9HF5C9nBDwcRFMqp-bcQAT4e5o=s900-c-k-c0x00ffffff-no-rj" alt="Кот Комару" />
+  </button>
+
+  <!-- Promo code button -->
+  <button id="promo-btn" title="Enter promo code">🎁 Promo Code</button>
+  
+  <!-- Home Section -->
+  <section id="home-section" class="section active">
+    <h1>💰 Clicker Komaru</h1>
+    
+    <div id="stats">
+      <div class="stat-box">Per Click: <span id="per-click">1</span></div>
+      <div class="stat-box">Auto CPS: <span id="auto-cps">0</span></div>
+      <div class="stat-box">Total Clicks: <span id="total-clicks">0</span></div>
+    </div>
+    
+    <div id="coin-display">Coins: 0</div>
+    <button id="click-btn">✨ CLICK ME! ✨</button>
+  </section>
+
+  <!-- Shop Section -->
+  <section id="shop-section" class="section">
+    <h2>🛍️ Shop</h2>
+    
+    <div class="shop-category">
+      <h3>🔼 Click Upgrades</h3>
+      <div class="upgrade" data-cost="20" data-add="1" data-type="click">
+        <div class="upgrade-info">
+          <div class="upgrade-name">+1 Click Power</div>
+          <div class="upgrade-description">Increase coins per click</div>
+        </div>
+        <div class="upgrade-cost">💰 20</div>
+      </div>
+      
+      <div class="upgrade" data-cost="100" data-add="5" data-type="click">
+        <div class="upgrade-info">
+          <div class="upgrade-name">+5 Click Power</div>
+          <div class="upgrade-description">Big boost to clicking</div>
+        </div>
+        <div class="upgrade-cost">💰 100</div>
+      </div>
+      
+      <div class="upgrade" data-cost="500" data-add="20" data-type="click">
+        <div class="upgrade-info">
+          <div class="upgrade-name">+20 Click Power</div>
+          <div class="upgrade-description">Massive clicking power</div>
+        </div>
+        <div class="upgrade-cost">💰 500</div>
+      </div>
+    </div>
+
+    <div class="shop-category">
+      <h3>🤖 Auto-Clickers</h3>
+      <div class="upgrade" data-cost="50" data-add="1" data-type="auto" data-interval="1000">
+        <div class="upgrade-info">
+          <div class="upgrade-name">Basic Auto-Clicker</div>
+          <div class="upgrade-description">1 coin per second</div>
+          <div class="auto-progress"><div class="auto-progress-bar"></div></div>
+        </div>
+        <div class="upgrade-cost">💰 50</div>
+      </div>
+      
+      <div class="upgrade" data-cost="300" data-add="5" data-type="auto" data-interval="1000">
+        <div class="upgrade-info">
+          <div class="upgrade-name">Super Clicker</div>
+          <div class="upgrade-description">5 coins per second</div>
+          <div class="auto-progress"><div class="auto-progress-bar"></div></div>
+        </div>
+        <div class="upgrade-cost">💰 300</div>
+      </div>
+    </div>
+
+    <div class="shop-category">
+      <h3>🎯 Multipliers</h3>
+      <div class="upgrade" data-cost="1000" data-multiply="2" data-type="multiplier">
+        <div class="upgrade-info">
+          <div class="upgrade-name">2x Multiplier</div>
+          <div class="upgrade-description">Double all income</div>
+        </div>
+        <div class="upgrade-cost">💰 1000</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section id="stats-section" class="section">
+    <h2>📊 Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Coins</div>
+        <div class="stat-value" id="stat-total-coins">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Clicks</div>
+        <div class="stat-value" id="stat-total-clicks">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Coins Per Click</div>
+        <div class="stat-value" id="stat-cpc">1</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Auto CPS</div>
+        <div class="stat-value" id="stat-auto-cps">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Global Multiplier</div>
+        <div class="stat-value" id="stat-multiplier">1x</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Play Time</div>
+        <div class="stat-value" id="stat-playtime">0s</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Achievements Section -->
+  <section id="achievements-section" class="section">
+    <h2>🏆 Achievements</h2>
+    <div class="achievement" id="achievement-100-clicks">
+      <div class="achievement-icon">👶</div>
+      <div class="achievement-info">
+        <div class="achievement-name">Clicker Novice</div>
+        <div class="achievement-description">Make 100 clicks</div>
+      </div>
+    </div>
+    <div class="achievement" id="achievement-1000-coins">
+      <div class="achievement-icon">💰</div>
+      <div class="achievement-info">
+        <div class="achievement-name">Thousandaire</div>
+        <div class="achievement-description">Collect 1000 coins</div>
+      </div>
+    </div>
+    <div class="achievement" id="achievement-10000-coins">
+      <div class="achievement-icon">💎</div>
+      <div class="achievement-info">
+        <div class="achievement-name">Coin Master</div>
+        <div class="achievement-description">Collect 10000 coins</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promo code modal -->
+  <div class="promo-modal" id="promo-modal">
+    <div class="promo-content">
+      <h3>🎁 Enter Promo Code</h3>
+      <input type="text" id="promo-input" placeholder="Type code here..." maxlength="20">
+      <button id="promo-submit">Activate</button>
+      <div class="promo-message" id="promo-message"></div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-section="home-section">
+      <span class="nav-icon">🏠</span>
+      <span>Home</span>
+    </button>
+    <button class="nav-btn" data-section="shop-section">
+      <span class="nav-icon">🛍️</span>
+      <span>Shop</span>
+    </button>
+    <button class="nav-btn" data-section="stats-section">
+      <span class="nav-icon">📊</span>
+      <span>Stats</span>
+    </button>
+    <button class="nav-btn" data-section="achievements-section">
+      <span class="nav-icon">🏆</span>
+      <span>Achievements</span>
+    </button>
+  </div>
+
+  <script>
+    // Game variables
+    let coins = 0;
+    let perClick = 1;
+    let totalClicks = 0;
+    let autoClickers = [];
+    let globalMultiplier = 1;
+    let usedPromoCodes = new Set();
+    let playTime = 0;
+    let totalCoinsEarned = 0;
+    let lastAutoBonusTime = 0;
+
+    // Navigation
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const sections = document.querySelectorAll('.section');
+
+    navButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sectionId = btn.getAttribute('data-section');
+        
+        // Update active states
+        navButtons.forEach(b => b.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        
+        btn.classList.add('active');
+        document.getElementById(sectionId).classList.add('active');
+      });
+    });
+
+    // Game elements
+    const coinDisplay = document.getElementById('coin-display');
+    const perClickDisplay = document.getElementById('per-click');
+    const autoCpsDisplay = document.getElementById('auto-cps');
+    const totalClicksDisplay = document.getElementById('total-clicks');
+    const clickBtn = document.getElementById('click-btn');
+    const upgrades = document.querySelectorAll('.upgrade');
+    const secretBtn = document.getElementById('secret-btn');
+    const promoBtn = document.getElementById('promo-btn');
+    const promoModal = document.getElementById('promo-modal');
+    const promoInput = document.getElementById('promo-input');
+    const promoSubmit = document.getElementById('promo-submit');
+    const promoMessage = document.getElementById('promo-message');
+    const topRightImage = document.getElementById('top-right-image');
+
+    // Stats elements
+    const statTotalCoins = document.getElementById('stat-total-coins');
+    const statTotalClicks = document.getElementById('stat-total-clicks');
+    const statCpc = document.getElementById('stat-cpc');
+    const statAutoCps = document.getElementById('stat-auto-cps');
+    const statMultiplier = document.getElementById('stat-multiplier');
+    const statPlaytime = document.getElementById('stat-playtime');
+
+    // Achievement elements
+    const achievement100Clicks = document.getElementById('achievement-100-clicks');
+    const achievement1000Coins = document.getElementById('achievement-1000-coins');
+    const achievement10000Coins = document.getElementById('achievement-10000-coins');
+
+    // Promo codes system
+    const promoCodes = {
+      'KOMARU': { coins: 1000, message: '🎉 Welcome bonus! +1000 coins!' },
+      'CLICKER': { coins: 500, message: '⚡ +500 coins for clicking!' },
+      'BONUS': { coins: 300, message: '💰 +300 bonus coins!' },
+      'GOLD': { coins: 2000, message: '🏆 Golden bonus! +2000 coins!' },
+      'BANANAS': { coins: 777, message: '🍌 Banana power! +777 coins!' }
+    };
+
+    // Auto bonus system
+    function giveAutoBonus() {
+      const now = Date.now();
+      // Check if 4-5 minutes have passed since last bonus
+      if (now - lastAutoBonusTime >= getRandomTime()) {
+        const bonusAmount = Math.floor(Math.random() * 91) + 10; // 10-100 coins
+        coins += bonusAmount;
+        totalCoinsEarned += bonusAmount;
+        lastAutoBonusTime = now;
+        
+        updateDisplay();
+        saveGame();
+        
+        // Show notification
+        showAutoBonusNotification(bonusAmount);
+        
+        // Visual effects
+        for (let i = 0; i < 3; i++) {
+          setTimeout(() => {
+            spawnFloatingCoin(
+              Math.random() * window.innerWidth,
+              Math.random() * window.innerHeight,
+              Math.floor(bonusAmount / 3)
+            );
+          }, i * 300);
+        }
+        
+        // Special effect for secret button
+        secretBtn.style.animation = 'pulse 1s';
+        setTimeout(() => 
