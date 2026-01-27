@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, orientation=landscape">
+    <title>Shadow Hunter: IZH-27 Edition</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #a3b1b6; font-family: sans-serif; touch-action: none; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 30px; pointer-events: none; z-index: 20; display: none; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; color: white; text-shadow: 1px 1px 2px #000; }
+        .stats { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.5); padding: 10px; border-radius: 5px; pointer-events: auto; }
+        .bar-bg { width: 120px; height: 10px; background: #333; margin: 5px 0; border-radius: 5px; overflow: hidden; }
+        #hp-bar { width: 100%; height: 100%; background: #ff4757; transition: width 0.2s; }
+        #joy-zone { position: absolute; bottom: 30px; left: 30px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #fff; pointer-events: auto; }
+        #joy-stick { position: absolute; width: 40px; height: 40px; background: #fff; border-radius: 50%; top: 30px; left: 30px; opacity: 0.5; }
+        #fire-btn { position: absolute; bottom: 30px; right: 30px; width: 90px; height: 90px; background: rgba(255, 71, 87, 0.7); border: 3px solid #fff; border-radius: 50%; pointer-events: auto; color: white; font-weight: bold; display: none; }
+        #reload-btn { position: absolute; bottom: 130px; right: 45px; width: 55px; height: 55px; background: rgba(0,0,0,0.6); border: 2px solid #fff; border-radius: 50%; pointer-events: auto; color: white; display: none; align-items: center; justify-content: center; }
+        #interact-btn { position: absolute; top: 60%; left: 50%; transform: translate(-50%, -50%); padding: 15px 35px; background: #e67e22; color: white; border-radius: 8px; display: none; pointer-events: auto; border: 2px solid #fff; font-weight: bold; font-size: 18px; }
+        #overlay, #death-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #overlay { background: #a3b1b6; color: #2c3e50; }
+        #death-screen { background: rgba(150, 0, 0, 0.95); color: white; display: none; }
+        .btn { padding: 15px 40px; font-size: 20px; background: #2c3e50; color: white; border: none; border-radius: 5px; margin-top: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="crosshair">+</div>
+
+<div id="overlay">
+    <h1>SHADOW HUNTER</h1>
+    <p>Дом и ИЖ-27 загружены. Монстры близко.</p>
+    <button class="btn" onclick="startGame()">ИГРАТЬ</button>
+</div>
+
+<div id="death-screen">
+    <h1 style="font-size: 70px; margin-bottom: 0;">ВЫ УБИТЫ</h1>
+    <p id="final-stats" style="font-size: 24px;"></p>
+    <button class="btn" style="background: white; color: darkred;" onclick="location.reload()">РЕСТАРТ</button>
+</div>
+
+<button id="interact-btn">ДЕЙСТВИЕ</button>
+
+<div id="ui">
+    <div class="stats">
+        HP <div class="bar-bg"><div id="hp-bar"></div></div>
+        УБИТО: <span id="kills">0</span><br>
+        <div id="ammo-ui" style="display:none;">
+            В СТВОЛАХ: <span id="ammo-cur">0</span>/2<br>
+            ЗАПАС: <span id="ammo-res">0</span>
+        </div>
+    </div>
+    <div id="joy-zone"><div id="joy-stick"></div></div>
+    <button id="fire-btn">ОГОНЬ</button>
+    <button id="reload-btn">🔄</button>
+</div>
+
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<script type="importmap"> { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } } </script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// --- ЗВУКИ ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSnd(f, d, t='sawtooth', v=0.2) {
+    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+    o.type = t; o.frequency.setValueAtTime(f, audioCtx.currentTime);
+    g.gain.setValueAtTime(v, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + d);
+    o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
+}
+
+let state = { hp: 100, kills: 0, ammoCur: 0, ammoRes: 0, hasGun: false, canPlay: false, dead: false, doors: [] };
+let move = { x: 0, y: 0 }, look = { lon: 180, lat: 0 }, lastX, lastY;
+const monsters = [];
+let house, table, gunModel;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xa3b1b6);
+scene.fog = new THREE.FogExp2(0xa3b1b6, 0.08);
+
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.01, 1000);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const loader = new GLTFLoader();
+
+// ЗАГРУЗКА ДОМА
+loader.load('93617604db8048d882c32b35347a84bf.glb', (g) => {
+    house = g.scene; scene.add(house);
+    house.traverse(c => { if(c.name.toLowerCase().includes('door')) state.doors.push({m:c, o:false, ry:c.rotation.y}); });
+});
+
+// ЗАГРУЗКА ИЖ-27
+loader.load('izh-27.glb', (g) => {
+    gunModel = g.scene;
+    gunModel.scale.set(0.4, 0.4, 0.4); // Подгоняем размер под руку
+    gunModel.visible = false;
+    camera.add(gunModel);
+    // Позиция ружья в экране
+    gunModel.position.set(0.2, -0.25, -0.4);
+    gunModel.rotation.y = Math.PI; // Разворачиваем стволом вперед
+});
+
+// ТУМБОЧКА
+table = new THREE.Mesh(new THREE.BoxGeometry(1, 0.7, 1), new THREE.MeshStandardMaterial({color: 0x3d2b1f}));
+table.position.set(-3, 0.35, -3); scene.add(table);
+
+// ЁЛКИ
+function addTree(x, z) {
+    const g = new THREE.Group();
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.2), new THREE.MeshStandardMaterial({color: 0x1a0f00}));
+    t.position.y = 0.6; g.add(t);
+    for(let i=0; i<3; i++) {
+        const c = new THREE.Mesh(new THREE.ConeGeometry(1.6-i*0.4, 2, 8), new THREE.MeshStandardMaterial({color: 0x0a1a0a}));
+        c.position.y = 1.2 + i*1.2; g.add(c);
+    }
+    g.position.set(x, 0, z); scene.add(g);
+}
+for(let i=0; i<120; i++) {
+    const x = Math.random()*300-150, z = Math.random()*300-150;
+    if(Math.abs(x)>12 || Math.abs(z)>12) addTree(x, z);
+}
+
+// МОНСТРЫ
+function spawnM() {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1.4, 3.2, 1), new THREE.MeshStandardMaterial({color: 0xff0000, emissive: 0x440000}));
+    const a = Math.random()*Math.PI*2; m.position.set(Math.cos(a)*60, 1.6, Math.sin(a)*60);
+    scene.add(m); monsters.push(m);
+}
+for(let i=0; i<15; i++) spawnM();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8); sun.position.set(20, 40, 10); scene.add(sun);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), new THREE.MeshStandardMaterial({color: 0x2d332d}));
+floor.rotation.x = -Math.PI/2; scene.add(floor);
+
+window.startGame = () => { 
+    if(audioCtx.state==='suspended') audioCtx.resume(); 
+    document.getElementById('overlay').style.display='none'; 
+    state.canPlay=true; camera.position.set(0, 1.7, 0); 
+};
+
+function updateUI() {
+    document.getElementById('hp-bar').style.width = state.hp + '%';
+    document.getElementById('ammo-cur').innerText = state.ammoCur;
+    document.getElementById('ammo-res').innerText = state.ammoRes;
+    document.getElementById('kills').innerText = state.kills;
+    
+    if(state.hp <= 0 && !state.dead) {
+        state.dead = true; state.canPlay = false;
+        document.getElementById('death-screen').style.display = 'flex';
+        document.getElementById('final-stats').innerText = `СЧЕТ: ${state.kills} МОНСТРОВ`;
+    }
+}
+
+document.getElementById('interact-btn').onclick = () => {
+    if(camera.position.distanceTo(table.position) < 2.5 && !state.hasGun) {
+        state.hasGun = true; state.ammoCur = 2; state.ammoRes = 20;
+        if(gunModel) gunModel.visible = true;
+        document.querySelectorAll('#ammo-ui, #fire-btn, #reload-btn, #crosshair').forEach(e => e.style.display='block');
+        updateUI(); playSnd(300, 0.1, 'square');
+    } else {
+        state.doors.forEach(d => { if(camera.position.distanceTo(d.m.position) < 5) { d.o = !d.o; d.m.rotation.y = d.o ? d.ry - 1.5 : d.ry; playSnd(150, 0.1); } });
+    }
+};
+
+document.getElementById('fire-btn').ontouchstart = (e) => {
+    e.preventDefault(); 
+    if(state.ammoCur > 0 && !state.dead) {
+        state.ammoCur--; updateUI(); 
+        playSnd(80, 0.2, 'sawtooth', 0.4);
+        
+        // Анимация отдачи
+        if(gunModel) {
+            gunModel.position.z += 0.1;
+            setTimeout(() => gunModel.position.z -= 0.1, 100);
+        }
+
+        const r = new THREE.Raycaster(); r.setFromCamera({x:0, y:0}, camera);
+        const hits = r.intersectObjects(monsters);
+        if(hits.length > 0) { 
+            hits[0].object.position.set(Math.random()*120-60, 1.6, Math.random()*120-60); 
+            state.kills++; updateUI(); 
+        }
+    }
+};
+
+document.getElementById('reload-btn').onclick = () => { 
+    if(state.ammoRes > 0 && state.ammoCur < 2) { 
+        state.ammoRes -= (2 - state.ammoCur); state.ammoCur = 2; 
+        updateUI(); playSnd(400, 0.2, 'square'); 
+    } 
+};
+
+window.addEventListener('touchstart', e => { for(let i=0; i<e.touches.length; i++) if(e.touches[i].clientX > window.innerWidth/2) { lastX = e.touches[i].clientX; lastY = e.touches[i].clientY; } });
+window.addEventListener('touchmove', e => {
+    for(let i=0; i<e.touches.length; i++) {
+        let t = e.touches[i]; if(t.clientX > window.innerWidth/2 && state.canPlay) {
+            look.lon -= (t.clientX - lastX) * 0.35; look.lat = Math.max(-85, Math.min(85, look.lat - (t.clientY - lastY) * 0.35));
+            lastX = t.clientX; lastY = t.clientY;
+        }
+    }
+});
+const jz = document.getElementById('joy-zone');
+jz.addEventListener('touchmove', e => {
+    e.preventDefault(); let t = [...e.touches].find(i => i.clientX < window.innerWidth/2); if(!t) return;
+    let r = jz.getBoundingClientRect(); let dx = (t.clientX - (r.left+r.width/2))/(r.width/2); let dy = (t.clientY - (r.top+r.height/2))/(r.height/2);
+    const d = Math.sqrt(dx*dx+dy*dy); if(d>1){dx/=d;dy/=d;} move = {x:dx, y:dy};
+    document.getElementById('joy-stick').style.transform = `translate(${dx*25}px,${dy*25}px)`;
+});
+jz.addEventListener('touchend', () => { move={x:0,y:0}; document.getElementById('joy-stick').style.transform='translate(0,0)'; });
+
+function animate() {
+    requestAnimationFrame(animate);
+    if(state.canPlay) {
+        camera.lookAt(new THREE.Vector3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(90-look.lat), THREE.MathUtils.degToRad(look.lon)).add(camera.position));
+        const dir = new THREE.Vector3(); camera.getWorldDirection(dir); dir.y=0; dir.normalize();
+        const side = new THREE.Vector3().crossVectors(dir, camera.up).normalize();
+        camera.position.addScaledVector(dir, -move.y*0.17).addScaledVector(side, move.x*0.17);
+
+        monsters.forEach(m => {
+            m.position.addScaledVector(new THREE.Vector3().subVectors(camera.position, m.position).normalize(), 0.065);
+            if(camera.position.distanceTo(m.position) < 2) { state.hp -= 0.8; updateUI(); if(Math.random() > 0.9) playSnd(60, 0.1, 'sine'); }
+        });
+
+        const isNearT = !state.hasGun && camera.position.distanceTo(table.position) < 2.5;
+        const isNearD = camera.position.distanceTo(new THREE.Vector3(0, 1.7, 5)) < 4;
+        document.getElementById('interact-btn').style.display = (isNearT || isNearD) ? 'block' : 'none';
+        if(isNearT || isNearD) document.getElementById('interact-btn').innerText = isNearT ? "ВЗЯТЬ ИЖ-27" : "ОТКРЫТЬ ДВЕРЬ";
+    }
+    renderer.render(scene, camera);
+}
+animate();
+window.onresize = () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
+</script>
+</body>
+</html>
